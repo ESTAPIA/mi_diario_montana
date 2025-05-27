@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1062686009099",
+    "project_id": "mi-diario-de-montana",
+    "storage_bucket": "mi-diario-de-montana.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062686009099:android:e57649abc7aad8bb28240e",
+        "android_client_info": {
+          "package_name": "com.example.mi_diario_de_montana"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9e7upCU2Wmyxwn3QNd3Tcb0MzRs0x6Zo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
