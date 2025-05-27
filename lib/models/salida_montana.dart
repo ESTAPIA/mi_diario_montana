@@ -34,4 +34,16 @@ class SalidaMontana {
       usuarioId: map['usuarioId'] ?? '',
     );
   }
+
+  // Crea una instancia desde un documento de Firestore
+  factory SalidaMontana.fromFirestore(dynamic doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return SalidaMontana(
+      titulo: data['titulo'] ?? '',
+      tipo: data['tipo'] ?? '',
+      descripcion: data['descripcion'] ?? '',
+      fecha: DateTime.parse(data['fecha']),
+      usuarioId: data['usuarioId'] ?? '',
+    );
+  }
 }

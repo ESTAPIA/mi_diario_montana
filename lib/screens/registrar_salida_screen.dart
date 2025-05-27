@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/salida_montana.dart';
+import '../services/notification_service.dart';
 
 class RegistrarSalidaScreen extends StatefulWidget {
   const RegistrarSalidaScreen({super.key});
@@ -14,42 +15,61 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _tituloController = TextEditingController();
   final _descripcionController = TextEditingController();
-  final _tipoController = TextEditingController();
+  String? _tipoSeleccionado;
   DateTime? _fecha;
 
   bool _isLoading = false;
+
+  final List<String> _tiposActividad = [
+    'Trekking',
+    'Senderismo',
+    'Escalada',
+    'Ciclismo',
+    'Camping',
+  ];
 
   @override
   void dispose() {
     _tituloController.dispose();
     _descripcionController.dispose();
-    _tipoController.dispose();
     super.dispose();
   }
 
   Future<void> _guardarSalida() async {
-    if (!_formKey.currentState!.validate() || _fecha == null) return;
+    if (!_formKey.currentState!.validate() || _fecha == null || _tipoSeleccionado == null) {
+      NotificationService.showError(context, 'Por favor completa todos los campos requeridos');
+      return;
+    }
+    
     setState(() => _isLoading = true);
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      NotificationService.showError(context, 'Debes iniciar sesión para continuar');
+      return;
+    }
 
-    final salida = SalidaMontana(
-      titulo: _tituloController.text.trim(),
-      tipo: _tipoController.text.trim(),
-      descripcion: _descripcionController.text.trim(),
-      fecha: _fecha!,
-      usuarioId: user.uid,
-    );
-
-    await FirebaseFirestore.instance.collection('salidas').add(salida.toMap());
-
-    setState(() => _isLoading = false);
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Salida registrada exitosamente')),
+    try {
+      final salida = SalidaMontana(
+        titulo: _tituloController.text.trim(),
+        tipo: _tipoSeleccionado!,
+        descripcion: _descripcionController.text.trim(),
+        fecha: _fecha!,
+        usuarioId: user.uid,
       );
+
+      await FirebaseFirestore.instance.collection('salidas').add(salida.toMap());
+
+      setState(() => _isLoading = false);
+      if (mounted) {
+        Navigator.pop(context);
+        NotificationService.showSuccess(context, '¡Salida registrada exitosamente! 🎉');
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        NotificationService.showError(context, 'Error al guardar la salida. Intenta de nuevo.');
+      }
     }
   }
 
@@ -70,13 +90,24 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
                     (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _tipoController,
+              DropdownButtonFormField<String>(
+                value: _tipoSeleccionado,
                 decoration: const InputDecoration(
-                  labelText: 'Tipo (ej: Trekking)',
+                  labelText: 'Tipo de actividad',
+                  border: OutlineInputBorder(),
                 ),
-                validator:
-                    (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                items: _tiposActividad.map((String tipo) {
+                  return DropdownMenuItem<String>(
+                    value: tipo,
+                    child: Text(tipo),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _tipoSeleccionado = newValue;
+                  });
+                },
+                validator: (value) => value == null ? 'Selecciona un tipo de actividad' : null,
               ),
               const SizedBox(height: 20),
               TextFormField(

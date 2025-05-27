@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/custom_text_field.dart';
+import '../services/notification_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -44,9 +45,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    NotificationService.showError(context, message);
   }
 
   void _registerUser() async {
@@ -55,15 +54,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     // Validaciones
     if (email.isEmpty || password.isEmpty) {
-      _showMessage('Por favor completa todos los campos');
+      NotificationService.showError(context, 'Por favor completa todos los campos');
       return;
     }
     if (!_isValidEmail(email)) {
-      _showMessage('Ingresa un correo válido');
+      NotificationService.showError(context, 'Ingresa un correo válido');
       return;
     }
     if (password.length < 6) {
-      _showMessage('La contraseña debe tener al menos 6 caracteres');
+      NotificationService.showError(context, 'La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
@@ -75,14 +74,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: password,
       );
       if (!mounted) return;
-      _showMessage('Registro exitoso ✅');
+      NotificationService.showSuccess(context, '¡Cuenta creada exitosamente! 🎉');
       Navigator.pushReplacementNamed(context, '/home');
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      _showMessage(_firebaseErrorToSpanish(e.code));
+      NotificationService.showError(context, _firebaseErrorToSpanish(e.code));
     } catch (_) {
       if (!mounted) return;
-      _showMessage('Error inesperado. Intenta de nuevo.');
+      NotificationService.showError(context, 'Error inesperado. Intenta de nuevo.');
     } finally {
       setState(() => _isLoading = false);
     }

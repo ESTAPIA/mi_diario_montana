@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/custom_text_field.dart';
+import '../services/notification_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -45,9 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    NotificationService.showError(context, message);
   }
 
   Future<void> _loginUser() async {
@@ -56,15 +55,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // Validaciones
     if (email.isEmpty || password.isEmpty) {
-      _showMessage('Por favor completa todos los campos');
+      NotificationService.showError(context, 'Por favor completa todos los campos');
       return;
     }
     if (!_isValidEmail(email)) {
-      _showMessage('Ingresa un correo válido');
+      NotificationService.showError(context, 'Ingresa un correo válido');
       return;
     }
     if (password.length < 6) {
-      _showMessage('La contraseña debe tener al menos 6 caracteres');
+      NotificationService.showError(context, 'La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
@@ -76,13 +75,14 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
       if (!mounted) return;
+      NotificationService.showSuccess(context, '¡Bienvenido de vuelta! 👋');
       Navigator.pushReplacementNamed(context, '/home');
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      _showMessage(_firebaseErrorToSpanish(e.code));
+      NotificationService.showError(context, _firebaseErrorToSpanish(e.code));
     } catch (_) {
       if (!mounted) return;
-      _showMessage('Error inesperado. Intenta de nuevo.');
+      NotificationService.showError(context, 'Error inesperado. Intenta de nuevo.');
     } finally {
       setState(() => _isLoading = false);
     }
