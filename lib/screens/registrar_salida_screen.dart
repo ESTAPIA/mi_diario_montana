@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import '../models/salida_montana.dart';
-import '../services/notification_service.dart';
 
 class RegistrarSalidaScreen extends StatefulWidget {
   const RegistrarSalidaScreen({super.key});
@@ -36,40 +36,28 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
   }
 
   Future<void> _guardarSalida() async {
-    if (!_formKey.currentState!.validate() || _fecha == null || _tipoSeleccionado == null) {
-      NotificationService.showError(context, 'Por favor completa todos los campos requeridos');
-      return;
-    }
-    
+    if (!_formKey.currentState!.validate() || _fecha == null || _tipoSeleccionado == null) return;
     setState(() => _isLoading = true);
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      NotificationService.showError(context, 'Debes iniciar sesión para continuar');
-      return;
-    }
+    if (user == null) return;
 
-    try {
-      final salida = SalidaMontana(
-        titulo: _tituloController.text.trim(),
-        tipo: _tipoSeleccionado!,
-        descripcion: _descripcionController.text.trim(),
-        fecha: _fecha!,
-        usuarioId: user.uid,
+    final salida = SalidaMontana(
+      titulo: _tituloController.text.trim(),
+      tipo: _tipoSeleccionado!,
+      descripcion: _descripcionController.text.trim(),
+      fecha: _fecha!,
+      usuarioId: user.uid,
+    );
+
+    await FirebaseFirestore.instance.collection('salidas').add(salida.toMap());
+
+    setState(() => _isLoading = false);
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Salida registrada exitosamente')),
       );
-
-      await FirebaseFirestore.instance.collection('salidas').add(salida.toMap());
-
-      setState(() => _isLoading = false);
-      if (mounted) {
-        Navigator.pop(context);
-        NotificationService.showSuccess(context, '¡Salida registrada exitosamente! 🎉');
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        NotificationService.showError(context, 'Error al guardar la salida. Intenta de nuevo.');
-      }
     }
   }
 
@@ -86,8 +74,12 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
               TextFormField(
                 controller: _tituloController,
                 decoration: const InputDecoration(labelText: 'Título'),
-                validator:
-                    (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.next,
+                onTap: () {
+                  SystemChannels.textInput.invokeMethod('TextInput.show');
+                },
+                validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
@@ -114,8 +106,11 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
                 controller: _descripcionController,
                 decoration: const InputDecoration(labelText: 'Descripción'),
                 maxLines: 6,
-                validator:
-                    (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                keyboardType: TextInputType.multiline,
+                onTap: () {
+                  SystemChannels.textInput.invokeMethod('TextInput.show');
+                },
+                validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
               ),
               const SizedBox(height: 6),
               ListTile(
@@ -139,10 +134,9 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _isLoading ? null : _guardarSalida,
-                child:
-                    _isLoading
-                        ? const CircularProgressIndicator()
-                        : const Text('Registrar salida'),
+                child: _isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text('Registrar salida'),
               ),
             ],
           ),

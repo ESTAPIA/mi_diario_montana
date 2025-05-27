@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import '../models/salida_montana.dart';
 import 'salida_detail_screen.dart';
 
@@ -79,6 +80,11 @@ class _HistorialSalidasScreenState extends State<HistorialSalidasScreen> {
                     prefixIcon: Icon(Icons.search),
                     border: OutlineInputBorder(),
                   ),
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.search,
+                  onTap: () {
+                    SystemChannels.textInput.invokeMethod('TextInput.show');
+                  },
                   onChanged: (value) {
                     setState(() {
                       _textoBusqueda = value;
@@ -170,8 +176,8 @@ class _HistorialSalidasScreenState extends State<HistorialSalidasScreen> {
                             ),
                           ],
                         ),
-                        onTap: () async {
-                          await Navigator.push(
+                        onTap: () {
+                          Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => SalidaDetailScreen(
@@ -180,8 +186,6 @@ class _HistorialSalidasScreenState extends State<HistorialSalidasScreen> {
                               ),
                             ),
                           );
-                          // No necesitamos hacer nada aquí porque usamos StreamBuilder
-                          // que se actualiza automáticamente con cambios de Firestore
                         },
                       ),
                     );

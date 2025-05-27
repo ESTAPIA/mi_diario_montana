@@ -3,9 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/salida_montana.dart';
 import 'editar_salida_screen.dart';
 import 'home_screen.dart';
-import '../services/notification_service.dart';
 
-class SalidaDetailScreen extends StatefulWidget {
+class SalidaDetailScreen extends StatelessWidget {
   final SalidaMontana salida;
   final String docId;
 
@@ -15,69 +14,49 @@ class SalidaDetailScreen extends StatefulWidget {
     required this.docId,
   });
 
-  @override
-  State<SalidaDetailScreen> createState() => _SalidaDetailScreenState();
-}
-
-class _SalidaDetailScreenState extends State<SalidaDetailScreen> {
-  late SalidaMontana _salida;
-
-  @override
-  void initState() {
-    super.initState();
-    _salida = widget.salida;
-  }
-
-  void _recargarDatos() async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('salidas')
-          .doc(widget.docId)
-          .get();
-      
-      if (doc.exists && mounted) {
-        setState(() {
-          _salida = SalidaMontana.fromFirestore(doc);
-        });
-      }
-    } catch (e) {
-      // Error silencioso, mantener datos actuales
-    }
-  }
-
   Future<void> _confirmarEliminar(BuildContext context) async {
-    final confirmado = await NotificationService.showConfirmDialog(
-      context,
-      title: 'Eliminar salida',
-      message: '¿Estás seguro de que deseas eliminar "${_salida.titulo}"?\n\nEsta acción no se puede deshacer.',
-      confirmText: 'Eliminar',
-      cancelText: 'Cancelar',
-      confirmColor: Colors.red,
-      icon: Icons.delete_forever,
+    final bool? confirmado = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Eliminar salida'),
+            content: const Text(
+              '¿Estás seguro de que deseas eliminar esta salida? Esta acción no se puede deshacer.',
+            ),
+            actions: [
+              TextButton(
+                child: const Text('Cancelar'),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.delete),
+                label: const Text('Eliminar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+          ),
     );
 
-    if (confirmado) {
-      try {
-        NotificationService.showLoadingDialog(context, 'Eliminando salida...');
-        
-        await FirebaseFirestore.instance
-            .collection('salidas')
-            .doc(widget.docId)
-            .delete();
+    if (confirmado == true) {
+      // Elimina el documento de Firestore
+      await FirebaseFirestore.instance
+          .collection('salidas')
+          .doc(docId)
+          .delete();
 
-        if (context.mounted) {
-          Navigator.pop(context); // Cerrar loading dialog
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (route) => false,
-          );
-          NotificationService.showSuccess(context, '¡Salida eliminada exitosamente! 🗑️');
-        }
-      } catch (e) {
-        if (context.mounted) {
-          Navigator.pop(context); // Cerrar loading dialog
-          NotificationService.showError(context, 'Error al eliminar la salida. Intenta de nuevo.');
-        }
+      // Vuelve al Home y muestra SnackBar
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (route) => false,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Salida eliminada exitosamente ✅')),
+        );
       }
     }
   }
@@ -86,23 +65,19 @@ class _SalidaDetailScreenState extends State<SalidaDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_salida.titulo),
+        title: Text(salida.titulo),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
             tooltip: 'Editar salida',
-            onPressed: () async {
-              final resultado = await Navigator.push<bool>(
+            onPressed: () {
+              Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => EditarSalidaScreen(salida: _salida, docId: widget.docId),
+                  builder:
+                      (_) => EditarSalidaScreen(salida: salida, docId: docId),
                 ),
               );
-              
-              // Si se editó la salida, recargar los datos
-              if (resultado == true) {
-                _recargarDatos();
-              }
             },
           ),
           IconButton(
@@ -117,7 +92,7 @@ class _SalidaDetailScreenState extends State<SalidaDetailScreen> {
         child: ListView(
           children: [
             Text(
-              _salida.titulo,
+              salida.titulo,
               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -125,7 +100,7 @@ class _SalidaDetailScreenState extends State<SalidaDetailScreen> {
               children: [
                 const Icon(Icons.category, color: Colors.green),
                 const SizedBox(width: 8),
-                Text(_salida.tipo, style: const TextStyle(fontSize: 18)),
+                Text(salida.tipo, style: const TextStyle(fontSize: 18)),
               ],
             ),
             const SizedBox(height: 16),
@@ -134,7 +109,7 @@ class _SalidaDetailScreenState extends State<SalidaDetailScreen> {
                 const Icon(Icons.calendar_today, color: Colors.blueGrey),
                 const SizedBox(width: 8),
                 Text(
-                  "${_salida.fecha.day}/${_salida.fecha.month}/${_salida.fecha.year}",
+                  "${salida.fecha.day}/${salida.fecha.month}/${salida.fecha.year}",
                   style: const TextStyle(fontSize: 16),
                 ),
               ],
@@ -145,7 +120,7 @@ class _SalidaDetailScreenState extends State<SalidaDetailScreen> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            Text(_salida.descripcion, style: const TextStyle(fontSize: 16)),
+            Text(salida.descripcion, style: const TextStyle(fontSize: 16)),
           ],
         ),
       ),

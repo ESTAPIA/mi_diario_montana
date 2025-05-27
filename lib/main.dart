@@ -8,7 +8,6 @@ import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/registrar_salida_screen.dart';
 import 'screens/historial_salidas_screen.dart';
-import 'screens/editar_salida_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -103,7 +102,6 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/registrar-salida': (context) => const RegistrarSalidaScreen(),
         '/historial-salidas': (context) => const HistorialSalidasScreen(),
-        // Nota: EditarSalidaScreen requiere parámetros, se navega con MaterialPageRoute
       },
     );
   }
